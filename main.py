@@ -326,38 +326,42 @@ class Upload(webapp2.RequestHandler):
         streams = Photo.all()
         streams.filter("root", True).filter("stream_name", current_stream)
 
-        if streams.count() == 0: #if current_stream is empty
-            streams2 = Photo.all()
-            streams2.order("-date_accessed")
-            stream_obj = streams2.get()
-            streams2.filter("root", True).filter("stream_name", stream_obj.stream_name)
-            stream_obj = streams2.get()
-        else:
-            stream_obj = streams.get()
-
-        if New_Image == '':
-            error_string = "No image provided!"
-            self.redirect('/error?error_message=' + error_string)
-        else:
-            comments = self.request.get("comments")
-            avatar = images.resize(New_Image, 500, 300)
-            new_photo = Photo(parent=db.Key.from_path('Photo', user.email() ),
-                              stream_name = stream_obj.stream_name,
-                              comments = comments,
-                              avatar = db.Blob(avatar),
-                              root = False
-                              )
-            if stream_obj.owner == user.email():
-                new_photo.put()
+        if user:
+            if streams.count() == 0: #if current_stream is empty
+                streams2 = Photo.all()
+                streams2.order("-date_accessed")
+                stream_obj = streams2.get()
+                streams2.filter("root", True).filter("stream_name", stream_obj.stream_name)
+                stream_obj = streams2.get()
             else:
-                error_string = "You are attempting to modify another user's stream!"
-                self.redirect('/error?error_message=' + error_string)
-            streams3 = Photo.all()
-            streams3.filter("root", False).filter("stream_name", stream_obj.stream_name)
-            stream_obj.total_pics = streams3.count()
-            stream_obj.put()
-            self.redirect('/view?current_stream=' + stream_obj.stream_name)
+                stream_obj = streams.get()
 
+            if New_Image == '':
+                error_string = "No image provided!"
+                self.redirect('/error?error_message=' + error_string)
+            else:
+                comments = self.request.get("comments")
+                avatar = images.resize(New_Image, 500, 300)
+                new_photo = Photo(parent=db.Key.from_path('Photo', user.email() ),
+                                  stream_name = stream_obj.stream_name,
+                                  comments = comments,
+                                  avatar = db.Blob(avatar),
+                                  root = False
+                                  )
+                if stream_obj.owner == user.email():
+                    new_photo.put()
+                else:
+                    error_string = "You are attempting to modify another user's stream!"
+                    self.redirect('/error?error_message=' + error_string)
+                streams3 = Photo.all()
+                streams3.filter("root", False).filter("stream_name", stream_obj.stream_name)
+                stream_obj.total_pics = streams3.count()
+                stream_obj.put()
+                self.redirect('/view?current_stream=' + stream_obj.stream_name)
+        else:
+            greeting = ('<a href="%s">Sign in or register</a>.' %
+                        users.create_login_url('/'))
+            self.response.out.write('<html><body>%s</body></html>' % greeting)
 
 class DisplayPhoto(webapp2.RequestHandler):
     def get(self):
@@ -373,10 +377,13 @@ class Logout(webapp2.RequestHandler):
     def get(self):
         user = users.get_current_user()
         if user:
-            self.response.out.write('<html><body><a href=users.create_logout_url(/)></a></body></html>')
-            greeting = ('<a href="%s">Sign in or register</a>.' %
-                        users.create_login_url('/'))
-            self.response.out.write('<html><body>%s</body></html>' % greeting)
+            #self.response.out.write('<html><body><a href=users.create_logout_url(/)></a></body></html>')
+            #users.create_logout_url('/manage')
+            self.response.out.write("""Hello, %s. <a href='%s'>Logout</a>""" % (user.nickname(), users.create_logout_url("/")))
+
+            #greeting = ('<a href="%s">Sign in or register</a>.' %
+            #            users.create_login_url('/'))
+            #self.response.out.write('<html><body>%s</body></html>' % greeting)
         else:
             print "did not find user"
             self.redirect('/')
