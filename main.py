@@ -20,7 +20,7 @@ class Photo(db.Model):
     comments = db.StringProperty()
     date_created = db.DateTimeProperty(auto_now_add=True)
     avatar = db.BlobProperty()
-    stream_name = db.StringProperty()
+    stream_name = db.StringProperty(required=True)
     date_accessed = db.DateTimeProperty(auto_now=True)
     tag  = db.StringProperty()
     total_pics = db.IntegerProperty()
@@ -150,7 +150,7 @@ class ViewAll(webapp2.RequestHandler):
         user = users.get_current_user()
 
         all_streams = Photo.all()
-        all_streams.filter("root", True).filter("owner", user.email())
+        all_streams.filter("root", True)
         most_recent = []
         for streams in all_streams:
             latest_photo = Photo.all()
@@ -256,35 +256,61 @@ class AddStream(webapp2.RequestHandler):
                 self.redirect('/error?error_message=' + error_string)
                 #self.redirect('/error')
             else:
-                print "new stream: %s" % stream_name
-                new_stream = Photo(key_name=stream_name,
-                                   stream_name = stream_name,
-                                   root = True,
-                                   tag = stream_tags,
-                                   total_pics = 0,
-                                   views = 0,
-                                   owner = user.email()
-                                   )
-                new_stream.put()
-
                 subscriber_list = unicode.split(subscribers)
-                for subscriber in subscriber_list:
-                    p = re.compile('\w+@\w+\.\w+')
-                    s = p.search(subscriber)
-                    if s != None:
-                        print "printing s %s" % s
-                        new_subscribers = Subscribers(stream_name = stream_name,
-                                                      subscriber=s.group(0)
-                                                      )
-                        new_subscribers.put()
-                        #TODO test if email is sent
-                        sender = user.email()
-                        to = s.group(0)
-                        subject = "Please Subscribe to " + user.nickname() + "'s Stream: " + stream_name
-                        body = optional_message
-                        mail.send_mail(sender, to, subject, body)
+                if len(subscriber_list) > 0:
+                    for subscriber in subscriber_list:
+                        p = re.compile('\w+@\w+\.\w+')
+                        s = p.search(subscriber)
+                        if s != None: #there is at least 1 subscriber request
+                            if s.group(0)  == user.email():
+                                print "found matching subscriber and owner"
+                                error_string3 = "Cannot subscribe to your own stream!"
+                                self.redirect('/error?error_message=' + error_string3)
+                            else:
+                                new_subscribers = Subscribers(stream_name = stream_name,
+                                                              subscriber=s.group(0)
+                                                              )
+                                new_subscribers.put()
+                                #TODO test if email is sent
+                                sender = user.email()
+                                to = s.group(0)
+                                subject = "Please Subscribe to " + user.nickname() + "'s Stream: " + stream_name
+                                body = optional_message
+                                mail.send_mail(sender, to, subject, body)
 
-                self.redirect('/manage')
+
+                                new_stream = Photo(key_name=stream_name,
+                                                   stream_name = stream_name,
+                                                   root = True,
+                                                   tag = stream_tags,
+                                                   total_pics = 0,
+                                                   views = 0,
+                                                   owner = user.email()
+                                                   )
+                                new_stream.put()
+                                self.redirect('/manage')
+                        else:
+                            new_stream = Photo(key_name=stream_name,
+                                stream_name = stream_name,
+                                root = True,
+                                tag = stream_tags,
+                                total_pics = 0,
+                                views = 0,
+                                owner = user.email()
+                                )
+                            new_stream.put()
+                            self.redirect('/manage')
+                else:
+                    new_stream = Photo(key_name=stream_name,
+                                       stream_name = stream_name,
+                                       root = True,
+                                       tag = stream_tags,
+                                       total_pics = 0,
+                                       views = 0,
+                                       owner = user.email()
+                                       )
+                    new_stream.put()
+                    self.redirect('/manage')
         else:
             greeting = ('<a href="%s">Sign in or register</a>.' %
                         users.create_login_url('/'))
@@ -363,6 +389,7 @@ class Upload(webapp2.RequestHandler):
                         users.create_login_url('/'))
             self.response.out.write('<html><body>%s</body></html>' % greeting)
 
+
 class DisplayPhoto(webapp2.RequestHandler):
     def get(self):
         photo = self.request.get('png')
@@ -401,23 +428,22 @@ class SubStream(webapp2.RequestHandler):
                 streams2.filter("stream_name", stream_name).filter("root", True)
                 stream_obj2 = streams2.get()
                 if stream_obj2.owner == user.email():
-                    error_string = "Cannot subscribe to your own stream!"
-                    self.redirect('/error?error_message=' + error_string)
-
-                streams = Subscribers.all()
-                streams.filter("stream_name", stream_name)
-                stream_obj = streams.get()
-                if streams.count() == 0: #new subscription
-
-
-                    new_subscribers = Subscribers(stream_name = stream_name,
-                                                  subscriber = user.email()
-                                                  )
-                    new_subscribers.put()
-                    self.redirect('/view?current_stream=' + stream_name)
-                else: #previously subscribed
-                    error_string = "Previously subscribed to this stream!"
-                    self.redirect('/error?error_message=' + error_string)
+                    error_string3 = "Cannot subscribe to your own stream!"
+                    self.redirect('/error?error_message=' + error_string3)
+                else:
+                    streams = Subscribers.all()
+                    streams.filter("stream_name", stream_name)
+                    stream_obj = streams.get()
+                    if streams.count() == 0: #new subscription
+                        new_subscribers = Subscribers(stream_name = stream_name,
+                                                      subscriber = user.email()
+                                                      )
+                        new_subscribers.put()
+                        self.redirect('/view?current_stream=' + stream_name)
+                    else: #previously subscribed
+                        print "entered else"
+                        error_string2 = "Previously subscribed to this stream!"
+                        self.redirect('/error?error_message=' + error_string2)
         else:
             greeting = ('<a href="%s">Sign in or register</a>.' %
                         users.create_login_url('/'))
@@ -455,6 +481,7 @@ class Error(webapp2.RequestHandler):
     error_message = self.request.get("error_message")
     print "received error message %s" % error_message
     if user:
+        print "in error handler"
         template_data = {"error_message": error_message}
         template = JINJA_ENVIRONMENT.get_template('templates/error.html')
         self.response.write(template.render(template_data))
