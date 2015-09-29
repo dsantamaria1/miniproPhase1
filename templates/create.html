@@ -1,0 +1,135 @@
+
+<!doctype html>
+<html>
+<head>
+    <title>Welcome to Connexus</title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+</head>
+
+<body>
+
+    <div>
+        <h1>Connexus.us</h1>
+        <nav class="navbar navbar-default">
+            <div class="container-fluid">
+              <!-- Brand and toggle get grouped for better mobile display -->
+              <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                  <span class="sr-only">Toggle navigation</span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/manage">Manage</a>
+              </div>
+              <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                  <span class="sr-only">Toggle navigation</span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/create">Create</a>
+              </div>
+              <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                  <span class="sr-only">Toggle navigation</span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/viewall?current_stream={{current_stream}}">View</a>
+              </div>
+              <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                  <span class="sr-only">Toggle navigation</span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/search">Search</a>
+              </div>
+              <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                  <span class="sr-only">Toggle navigation</span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/trend">Trending</a>
+              </div>
+              <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                  <span class="sr-only">Toggle navigation</span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/manage">Social</a>
+              </div>
+              <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                  <span class="sr-only">Toggle navigation</span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                  <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="/logout">Logout</a>
+              </div>
+            </div><!-- /.container-fluid -->
+        </nav>
+
+
+
+        <div class="container-fluid">
+            <form name="input" action="add_stream" method="post">
+            <div class="row">
+                <div class="col-md-5">
+                    <input type="text" name="stream_name" value="Default stream name" style="width: 400px; height: 25px">
+                    <h3>
+                        Name your stream
+                    </h3>
+
+                </div>
+                <div class="col-md-5">
+                    <input type="text" name="tags" value="Default tag" style="width: 400px; height: 75px">
+                    <h3>
+                        Tag your stream
+                    </h3>
+
+                </div>
+            </div>
+                <br>
+            <div class="row">
+                <div class="col-md-5">
+                    <input type="text" name="subscribers" value="Email Addresses (Separate with comma and space)"
+                           style="width: 400px; height: 150px">
+                    <input type="text" name="optional_message" value="Optional message for invite"
+                           style="width: 400px; height: 100px">
+                    <h3>
+                        Add subscribers
+                    </h3>
+                </div>
+                <div class="col-md-5">
+                    <input type="text" name="cover_image_url" value="URL to cover image" style="width: 500px; height: 100px">
+
+                    <h3>
+                        URL to cover image (Can be empty)
+                    </h3>
+                </div>
+            </div>
+
+            <input type="submit" value="Create Stream">
+        <hr>
+
+        </form>
+        </div>
+    </div>
+</body>
+</html>
