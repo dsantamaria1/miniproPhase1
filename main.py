@@ -517,13 +517,14 @@ class SetCronjob(webapp2.RequestHandler):
             #cron_new.put()
             period = self.request.get("rate")
             if period != '':
-                cron_new.cron_period = period
+                cron_new.cron_period = int(period)
                 cron_new.put()
             self.redirect('/trend')
         else:
             greeting = ('<a href="%s">Sign in or register</a>.' %
                         users.create_login_url('/'))
             self.response.out.write('<html><body>%s</body></html>' % greeting)
+
 
 class Cronjob(webapp2.RequestHandler):
     def post(self):
