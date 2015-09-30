@@ -516,9 +516,9 @@ class SetCronjob(webapp2.RequestHandler):
             cron_new = Cron(cron_period = 0)
             #cron_new.put()
             period = self.request.get("rate")
-            if period != '':
-                cron_new.cron_period = int(period)
-                cron_new.put()
+            #if period != '':
+            #    cron_new.cron_period = int(period)
+            #    cron_new.put()
             self.redirect('/trend')
         else:
             greeting = ('<a href="%s">Sign in or register</a>.' %
