@@ -181,20 +181,20 @@ class Search(webapp2.RequestHandler):
             matched_searches = []
             tags = []
             for stream in find_root:
-                if search_word in stream.tag:# or search_word in stream.stream_name:
-                    print "found matching tag"
+                if search_word in stream.tag or search_word in stream.stream_name:
+                    print "found matching tag %s" % stream.tag
                     matched_searches.append(stream)
 
             if search_word != '':
                 print "1"
-                for stream in matched_searches:
-                    print stream.stream_name
-                    print stream.tag
+                for stream2 in matched_searches:
+                    print stream2.stream_name
+                    print stream2.tag
                     tag_list = Photo.all()
-                    tag_list.filter("stream_name", stream.stream_name).filter("root", False).order("-date_accessed")
-                    for tag in tag_list:
-                        print "33333       ss"
-                        tags.append(tag)
+                    tag_list.filter("stream_name", stream2.stream_name).filter("root", False).order("-date_accessed")
+                    #for tag in tag_list:
+                    #    print "33333"
+                    tags.append(tag_list.get())
 
             num_results = len(tags)
             print "results: %d" % num_results
