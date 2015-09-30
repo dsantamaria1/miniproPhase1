@@ -4,6 +4,7 @@ import webapp2
 import os
 import jinja2
 import re
+import datetime
 from google.appengine.api import users
 from google.appengine.ext import db
 from google.appengine.api import images
@@ -32,12 +33,22 @@ class Subscribers(db.Model):
     subscriber = db.EmailProperty()
     stream_name = db.StringProperty()
 
+class Views(db.Model):
+    stream_name = db.StringProperty()
+    views_in_last_hour = db.DateTimeProperty(auto_now_add=True)
+
+class Cron(db.Model):
+    cron_period = db.IntegerProperty()
+    date_accessed = db.DateTimeProperty(auto_now=True)
 
 class MainHandler(webapp2.RequestHandler):
     def get(self):
         user = users.get_current_user()
 
         if user:
+            print "creating cron"
+            cron = Cron(cron_period = 0)
+            cron.put()
             template = JINJA_ENVIRONMENT.get_template('templates/index.html')
             self.response.write(template.render())
         else:
@@ -132,6 +143,8 @@ class View(webapp2.RequestHandler):
 
         #incrementing stream views
         if stream_obj.owner != user.email():
+            views = Views(stream_name = stream_obj.stream_name)
+            views.put()
             stream_obj.views += 1
             stream_obj.put()
 
@@ -214,6 +227,14 @@ class Trending(webapp2.RequestHandler):
         user = users.get_current_user()
 
         if user:
+            views = Views.all()
+            stream_views = {}
+            for view in views:
+                if view.stream_name not in stream_views:
+                    stream_views[view.stream_name] = 1
+                else:
+                    stream_views[view.stream_name] += 1
+
             template = JINJA_ENVIRONMENT.get_template('templates/trending.html')
             self.response.write(template.render())
         else:
@@ -484,6 +505,109 @@ class Error(webapp2.RequestHandler):
         self.response.out.write('<html><body>%s</body></html>' % greeting)
 
 
+class SetCronjob(webapp2.RequestHandler):
+    def post(self):
+        user= users.get_current_user()
+        if user:
+            cron = Cron.all()
+            for c in cron:
+                db.delete(c.key())
+
+            cron_new = Cron(cron_period = 0)
+            #cron_new.put()
+            period = self.request.get("rate")
+            if period != '':
+                cron_new.cron_period = period
+                cron_new.put()
+            self.redirect('/trend')
+        else:
+            greeting = ('<a href="%s">Sign in or register</a>.' %
+                        users.create_login_url('/'))
+            self.response.out.write('<html><body>%s</body></html>' % greeting)
+
+class Cronjob(webapp2.RequestHandler):
+    def post(self):
+        views = Views.all()
+        #make dict of stream names and views
+        streams = []
+        for view in views:
+            if view.stream_name not in streams:
+                streams.append(view.stream_name)
+
+        for stream in streams:
+            views2 = Views.all()
+            views2.filter("stream_name", stream.stream_name).order("-date_accessed")
+            for v in views2:
+                if((datetime.datetime.now() - v.views_in_last_hour)>=datetime.timedelta(minutes=60)):
+                    db.delete(v.key())
+
+
+            views = Views.all()
+            stream_views = {}
+            for view in views:
+                if view.stream_name not in stream_views:
+                    stream_views[view.stream_name] = 1
+                else:
+                    stream_views[view.stream_name] += 1
+
+        #send emails
+        cron_list = Cron.all()
+        cron = cron_list.get()
+        if cron_list.count() == 0:
+            print "hahahaha"
+        if((datetime.datetime.now() - cron.date_accessed)>=datetime.timedelta(minutes=5)) and cron.cron_period == 5:
+            cron2 = Cron.all()
+            for c in cron2:
+                db.delete(c.key())
+
+            cron_new = Cron(cron_period = 0)
+            cron_new.put()
+
+            email_list = ["nima.dini@utexas.edu","kevzsolo@gmail.com"]
+            for email in email_list:
+                sender = "santamaria@utexas.edu"
+                to = email
+                subject = "CronJob: Trending Streams"
+                body = """Hi %s,
+                          Trending topics are:
+                          """ % (to)
+                mail.send_mail(sender, to, subject, body)
+        elif((datetime.datetime.now() - cron.date_accessed)>=datetime.timedelta(minutes=60)) and cron.cron_period == 60:
+            cron2 = Cron.all()
+            for c in cron2:
+                db.delete(c.key())
+
+            cron_new = Cron(cron_period = 60)
+            cron_new.put()
+
+            for email in email_list:
+                sender = "santamaria@utexas.edu"
+                to = email
+                subject = "CronJob: Trending Streams"
+                body = """Hi %s,
+                          Trending topics are:
+                          """ % (to)
+                mail.send_mail(sender, to, subject, body)
+            print "send email"
+        elif((datetime.datetime.now() - cron.date_accessed)>=datetime.timedelta(minutes=1440)) and cron.cron_period == 1440:
+            cron2 = Cron.all()
+            for c in cron2:
+                db.delete(c.key())
+
+            cron_new = Cron(cron_period = 1440)
+            cron_new.put()
+
+            for email in email_list:
+                sender = "santamaria@utexas.edu"
+                to = email
+                subject = "CronJob: Trending Streams"
+                body = """Hi %s,
+                          Trending topics are:
+                          """ % (to)
+                mail.send_mail(sender, to, subject, body)
+
+        self.redirect('/trend')
+
 app = webapp2.WSGIApplication([
     ('/', MainHandler),
     ('/manage', Manage),
@@ -500,5 +624,7 @@ app = webapp2.WSGIApplication([
     ('/upload', Upload),
     ('/display', DisplayPhoto),
     ('/error', Error),
+    ('/cronjob', Cronjob),
+    ('/set_cronjob', SetCronjob),
     ('/logout', Logout)
 ], debug=True)

@@ -83,8 +83,18 @@
               </div>
             </div><!-- /.container-fluid -->
         </nav>
-    <div>
+    <div class="container-fluid">
         <h3>Top 3 Trending Streams</h3>
+
+        <div class="col-md-3 ">
+            <form name="input" action="set_cronjob" method="post">
+                <input type="radio" name="rate" value="No reports">No reports<br>
+                <input type="radio" name="rate" value="5">Every 5 minutes<br>
+                <input type="radio" name="rate" value="60">Every 1 hour<br>
+                <input type="radio" name="rate" value="1440">Every day<br>
+                <input type="submit" value="Update rate">
+            </form>
+        </div>
     </div>
 
 

@@ -1,0 +1,10 @@
+cron:
+- description: Gather the trending board statistics every 5 mins
+  url: /cronjob
+  schedule: every 5 mins
+- description: Gather the trending board statistics hourly
+  url: /cronjob
+  schedule: every 60 mins
+- description: Gather the trending board statistics daily
+  url: /cronjob
+  schedule: every 24 hours
