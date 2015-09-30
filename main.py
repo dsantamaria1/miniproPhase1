@@ -131,8 +131,9 @@ class View(webapp2.RequestHandler):
             photos_in_stream = None
 
         #incrementing stream views
-        stream_obj.views += 1
-        stream_obj.put()
+        if stream_obj.owner != user.email():
+            stream_obj.views += 1
+            stream_obj.put()
 
         template_data = {"current_stream": current_stream,
                          "photos_in_stream": photos_in_stream}
@@ -180,22 +181,19 @@ class Search(webapp2.RequestHandler):
             matched_searches = []
             tags = []
             for stream in find_root:
-                #print stream.tag
-                ###p = re.compile('%s'%search_word)
-                ###sub_string = p.findall(stream.tag)
-                ###if sub_string != None:
-                ###    print "found a match"
-                ###    print stream.stream_name
-                ###    matched_searches.append(stream.stream_name)
-                ###else:
-                ###    print "did not find a match"
-                if search_word in stream.tag:
+                if search_word in stream.tag:# or search_word in stream.stream_name:
+                    print "found matching tag"
                     matched_searches.append(stream)
+
             if search_word != '':
+                print "1"
                 for stream in matched_searches:
+                    print stream.stream_name
+                    print stream.tag
                     tag_list = Photo.all()
                     tag_list.filter("stream_name", stream.stream_name).filter("root", False).order("-date_accessed")
                     for tag in tag_list:
+                        print "33333       ss"
                         tags.append(tag)
 
             num_results = len(tags)
@@ -248,59 +246,50 @@ class AddStream(webapp2.RequestHandler):
         optional_message = self.request.get("optional_message")
         if user:
             streams = Photo.all()
+            streams2 = Photo.all()
             sub_streams = Subscribers.all()
             streams.filter("stream_name", stream_name)
+            streams2.filter("root", True).filter("stream_name", stream_name)
+
+            owner_list = [user.email()]
+
+            subscriber_list = unicode.split(subscribers)
+            subscriber_set = set(subscriber_list)
+            owner_set = set(owner_list)
+            intersection = owner_set.intersection(subscriber_set)
 
             if streams.count() > 0:
                 error_string = "you tried to create a new stream whose name is the same as an existing stream, operation did not complete."
                 self.redirect('/error?error_message=' + error_string)
                 #self.redirect('/error')
             else:
-                subscriber_list = unicode.split(subscribers)
-                if len(subscriber_list) > 0:
+                if len(intersection) > 0:
+                    error_string3 = "Cannot subscribe to your own stream!"
+                    self.redirect('/error?error_message=' + error_string3)
+                else:
+                    subscriber_list2 = []
                     for subscriber in subscriber_list:
                         p = re.compile('\w+@\w+\.\w+')
                         s = p.search(subscriber)
                         if s != None: #there is at least 1 subscriber request
-                            if s.group(0)  == user.email():
-                                print "found matching subscriber and owner"
-                                error_string3 = "Cannot subscribe to your own stream!"
-                                self.redirect('/error?error_message=' + error_string3)
-                            else:
-                                new_subscribers = Subscribers(stream_name = stream_name,
-                                                              subscriber=s.group(0)
-                                                              )
-                                new_subscribers.put()
-                                #TODO test if email is sent
-                                sender = user.email()
-                                to = s.group(0)
-                                subject = "Please Subscribe to " + user.nickname() + "'s Stream: " + stream_name
-                                body = optional_message
-                                mail.send_mail(sender, to, subject, body)
+                            subscriber_list2.append(s.group(0))
 
+                    if len(subscriber_list2) != 0:
+                        #new_subscribers = Subscribers(stream_name = stream_name,
+                        #                              subscriber=s.group(0)
+                        #                              )
+                        #new_subscribers.put()
+                        for rec in subscriber_list2:
+                            sender = user.email()
+                            to = rec
+                            subject = "Please Subscribe to " + user.nickname() + "'s Stream: " + stream_name
+                            body = """Hi %s,
+                                    Please subscribe to my stream "%s".
+                                    You should be able to find it using the search tab.
+                                    Optional Message:
+                                    %s""" % (rec, stream_name, optional_message)
+                            mail.send_mail(sender, to, subject, body)
 
-                                new_stream = Photo(key_name=stream_name,
-                                                   stream_name = stream_name,
-                                                   root = True,
-                                                   tag = stream_tags,
-                                                   total_pics = 0,
-                                                   views = 0,
-                                                   owner = user.email()
-                                                   )
-                                new_stream.put()
-                                self.redirect('/manage')
-                        else:
-                            new_stream = Photo(key_name=stream_name,
-                                stream_name = stream_name,
-                                root = True,
-                                tag = stream_tags,
-                                total_pics = 0,
-                                views = 0,
-                                owner = user.email()
-                                )
-                            new_stream.put()
-                            self.redirect('/manage')
-                else:
                     new_stream = Photo(key_name=stream_name,
                                        stream_name = stream_name,
                                        root = True,
@@ -348,6 +337,8 @@ class Upload(webapp2.RequestHandler):
     def post(self):
         user = users.get_current_user()
         New_Image = self.request.get("img")
+        print "yeaffff"
+        print New_Image
         current_stream = self.request.get("current_stream")
         streams = Photo.all()
         streams.filter("root", True).filter("stream_name", current_stream)
@@ -376,14 +367,16 @@ class Upload(webapp2.RequestHandler):
                                   )
                 if stream_obj.owner == user.email():
                     new_photo.put()
+                    streams3 = Photo.all()
+                    streams3.filter("root", False).filter("stream_name", stream_obj.stream_name)
+                    stream_obj.total_pics = streams3.count()
+                    stream_obj.put()
+                    self.redirect('/view?current_stream=' + stream_obj.stream_name)
                 else:
+                    print "going somewhere else"
                     error_string = "You are attempting to modify another user's stream!"
                     self.redirect('/error?error_message=' + error_string)
-                streams3 = Photo.all()
-                streams3.filter("root", False).filter("stream_name", stream_obj.stream_name)
-                stream_obj.total_pics = streams3.count()
-                stream_obj.put()
-                self.redirect('/view?current_stream=' + stream_obj.stream_name)
+
         else:
             greeting = ('<a href="%s">Sign in or register</a>.' %
                         users.create_login_url('/'))
@@ -432,7 +425,7 @@ class SubStream(webapp2.RequestHandler):
                     self.redirect('/error?error_message=' + error_string3)
                 else:
                     streams = Subscribers.all()
-                    streams.filter("stream_name", stream_name)
+                    streams.filter("stream_name", stream_name).filter("subscriber", user.email())
                     stream_obj = streams.get()
                     if streams.count() == 0: #new subscription
                         new_subscribers = Subscribers(stream_name = stream_name,
